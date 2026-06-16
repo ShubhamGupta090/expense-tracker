@@ -16,10 +16,12 @@
 
 // Global variables
 let activeView = 'dashboard';
+let isAuthScreenActive = false;
+let authMode = 'login'; // 'login' or 'register'
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Initialize DB State
-    initializeState();
+    // 1. Initialize Auth System
+    initAuthController();
 
     // 2. Start Core UI Controllers
     initThemeController();
@@ -47,14 +49,207 @@ document.addEventListener('DOMContentLoaded', () => {
     // 8. Bind Settings Backups & resets
     setupSettingsHandlers();
 
-    // 9. Render Initial View (Dashboard)
-    renderActiveView();
+    // 9. Render Initial View (Dashboard) if logged in
+    if (!isAuthScreenActive) {
+        renderActiveView();
+    }
 
     // Initial Lucide Icons compilation
     if (window.lucide) {
         window.lucide.createIcons();
     }
 });
+
+/* 
+ =================================================================
+ AUTHENTICATION & SESSION Life-cycle Orchestration
+ =================================================================
+ */
+
+function initAuthController() {
+    const form = document.getElementById('form-login');
+    const btnToggle = document.getElementById('btn-toggle-register');
+    const usernameInput = document.getElementById('login-username');
+    const pinInput = document.getElementById('login-pin');
+    const btnLogout = document.getElementById('btn-logout');
+
+    // Handle Login/Register submission
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = usernameInput.value.trim();
+            const pin = pinInput.value.trim();
+
+            if (authMode === 'login') {
+                const res = authenticateUser(username, pin);
+                if (res.success) {
+                    switchUserSession(username);
+                    checkAuthSession();
+                    showToast(`Access granted. Welcome back, ${username}!`, 'success');
+                } else {
+                    showToast(res.message, 'error');
+                }
+            } else {
+                const res = registerUser(username, pin);
+                if (res.success) {
+                    // Registration succeeded, log them in automatically
+                    switchUserSession(username);
+                    checkAuthSession();
+                    showToast(`Vault created. Welcome, ${username}!`, 'success');
+                } else {
+                    showToast(res.message, 'error');
+                }
+            }
+        });
+    }
+
+    // Toggle Mode (Login vs Register)
+    if (btnToggle) {
+        btnToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            const btnSubmitText = document.querySelector('#btn-login-submit span');
+            const submitIcon = document.querySelector('#btn-login-submit i');
+            const subtitle = document.querySelector('.login-subtitle');
+
+            if (authMode === 'login') {
+                authMode = 'register';
+                btnToggle.textContent = 'Back to Login';
+                if (btnSubmitText) btnSubmitText.textContent = 'Create Profile Vault';
+                if (submitIcon) submitIcon.setAttribute('data-lucide', 'user-plus');
+                if (subtitle) subtitle.textContent = 'Register a New Isolated Database Profile';
+            } else {
+                authMode = 'login';
+                btnToggle.textContent = 'Register New Profile';
+                if (btnSubmitText) btnSubmitText.textContent = 'Enter Secure Vault';
+                if (submitIcon) submitIcon.setAttribute('data-lucide', 'shield-check');
+                if (subtitle) subtitle.textContent = 'Secure Client-Side Multi-Profile Ledger';
+            }
+            
+            // Clear inputs
+            usernameInput.value = '';
+            pinInput.value = '';
+            
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+        });
+    }
+
+    // Logout trigger
+    if (btnLogout) {
+        btnLogout.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const confirmed = await showConfirm(
+                'Lock Wallet Session',
+                'Are you sure you want to log out from this profile? Your ledger data remains encrypted in this browser.'
+            );
+            if (confirmed) {
+                logoutUser();
+                checkAuthSession();
+                showToast('Wallet session successfully locked.', 'info');
+            }
+        });
+    }
+
+    // Run initial auth state verification
+    checkAuthSession();
+}
+
+function checkAuthSession() {
+    const activeUser = getActiveUser();
+    const loginScreen = document.getElementById('login-screen');
+    const body = document.body;
+
+    if (activeUser) {
+        isAuthScreenActive = false;
+        if (loginScreen) {
+            loginScreen.classList.remove('active');
+        }
+        body.classList.remove('login-mode');
+        
+        // Populate sidebar user details dynamically
+        updateSidebarUserProfile(activeUser);
+        
+        // Repaint the screen
+        renderActiveView();
+    } else {
+        isAuthScreenActive = true;
+        if (loginScreen) {
+            loginScreen.classList.add('active');
+        }
+        body.classList.add('login-mode');
+        
+        // Render login page elements (quick profiles list)
+        renderAuthScreen();
+    }
+    
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+}
+
+function updateSidebarUserProfile(userId) {
+    const avatarEl = document.getElementById('sidebar-user-avatar');
+    const nameEl = document.getElementById('sidebar-user-name');
+    const idEl = document.getElementById('sidebar-user-id');
+    
+    if (avatarEl) {
+        avatarEl.textContent = userId.substring(0, 2).toUpperCase();
+    }
+    if (nameEl) {
+        nameEl.textContent = userId;
+    }
+    if (idEl) {
+        idEl.textContent = `@${userId.toLowerCase()}`;
+    }
+}
+
+function renderAuthScreen() {
+    const quickSection = document.getElementById('quick-profiles-section');
+    const quickList = document.getElementById('quick-profiles-list');
+    
+    if (!quickSection || !quickList) return;
+
+    const users = getRegisteredUsers();
+    if (users.length === 0) {
+        quickSection.classList.add('hidden');
+        return;
+    }
+
+    quickSection.classList.remove('hidden');
+    quickList.innerHTML = users.map(user => {
+        const initials = user.username.substring(0, 2).toUpperCase();
+        return `
+            <div class="quick-profile-item" data-username="${user.username}">
+                <div class="quick-profile-avatar">${initials}</div>
+                <div class="quick-profile-info">
+                    <span class="quick-profile-name">${user.username}</span>
+                    <span class="quick-profile-id">@${user.username.toLowerCase()}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Bind click handlers to quick switch items
+    const items = quickList.querySelectorAll('.quick-profile-item');
+    items.forEach(item => {
+        item.addEventListener('click', () => {
+            const username = item.getAttribute('data-username');
+            document.getElementById('login-username').value = username;
+            
+            // Switch auth mode back to login if it was in register
+            if (authMode === 'register') {
+                document.getElementById('btn-toggle-register').click();
+            }
+            
+            // Focus PIN field
+            document.getElementById('login-pin').value = '';
+            document.getElementById('login-pin').focus();
+            
+            showToast(`Profile "${username}" selected. Enter PIN.`, 'info');
+        });
+    });
+}
 
 /* 
  =================================================================

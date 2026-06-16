@@ -10,38 +10,167 @@ const KEYS = {
     GLOBAL_BUDGET: 'ql_v2_global_budget',
     GOALS: 'ql_v2_savings_goals',
     LOGS: 'ql_v2_statement_logs',
-    SETTINGS: 'ql_v2_settings'
+    SETTINGS: 'ql_v2_settings',
+    USER_DIRECTORY: 'ql_v2_global_user_directory' // Root key for user registry
 };
 
 // Memory storage fallback cache for restricted filesystem environments (e.g. file:// CORS blocks)
 let memoryStorage = {};
 
+// Active user session state (tab-scoped persistence)
+let activeUserId = '';
+try {
+    activeUserId = sessionStorage.getItem('ql_active_user_id') || '';
+} catch (e) {
+    console.warn('sessionStorage is blocked, using memory session.', e);
+}
+
+function getPartitionedKey(key) {
+    if (key === KEYS.USER_DIRECTORY) {
+        return key;
+    }
+    const userId = activeUserId ? activeUserId.trim().toLowerCase() : 'guest';
+    return `${key}_user_${userId}`;
+}
+
 const safeStorage = {
     getItem(key) {
+        const partitionedKey = getPartitionedKey(key);
         try {
-            return localStorage.getItem(key);
+            return localStorage.getItem(partitionedKey);
         } catch (e) {
-            console.warn(`Storage read blocked for key "${key}", using memory backup.`, e);
-            return memoryStorage[key] || null;
+            console.warn(`Storage read blocked for key "${partitionedKey}", using memory backup.`, e);
+            return memoryStorage[partitionedKey] || null;
         }
     },
     setItem(key, value) {
+        const partitionedKey = getPartitionedKey(key);
         try {
-            localStorage.setItem(key, value);
+            localStorage.setItem(partitionedKey, value);
         } catch (e) {
-            console.warn(`Storage write blocked for key "${key}", using memory backup.`, e);
-            memoryStorage[key] = value;
+            console.warn(`Storage write blocked for key "${partitionedKey}", using memory backup.`, e);
+            memoryStorage[partitionedKey] = value;
         }
     },
-    clear() {
+    clearUserPartition() {
+        const userId = activeUserId ? activeUserId.trim().toLowerCase() : 'guest';
+        const suffix = `_user_${userId}`;
         try {
-            localStorage.clear();
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.endsWith(suffix)) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(k => localStorage.removeItem(k));
         } catch (e) {
-            console.warn('Storage clear blocked, using memory backup.', e);
+            console.warn(`Storage clear partition blocked for "${suffix}", using memory backup.`, e);
         }
-        memoryStorage = {};
+        
+        Object.keys(memoryStorage).forEach(k => {
+            if (k.endsWith(suffix)) {
+                delete memoryStorage[k];
+            }
+        });
     }
 };
+
+// Simple polynomial hashing for client-side PIN storage
+function hashPin(pin) {
+    let hash = 5381;
+    for (let i = 0; i < pin.length; i++) {
+        hash = (hash * 33) ^ pin.charCodeAt(i);
+    }
+    return (hash >>> 0).toString(16);
+}
+
+function getActiveUser() {
+    return activeUserId;
+}
+
+function getRegisteredUsers() {
+    try {
+        const dir = safeStorage.getItem(KEYS.USER_DIRECTORY);
+        return dir ? JSON.parse(dir) : [];
+    } catch (e) {
+        console.error('Failed to parse user directory.', e);
+        return [];
+    }
+}
+
+function registerUser(userId, pin) {
+    const cleanId = userId.trim();
+    if (!cleanId || cleanId.length < 3 || cleanId.length > 15 || !/^[a-zA-Z0-9_]+$/.test(cleanId)) {
+        return { success: false, message: 'Invalid Login ID. Use 3-15 alphanumeric characters.' };
+    }
+    
+    const registry = getRegisteredUsers();
+    const exists = registry.some(u => u.username.toLowerCase() === cleanId.toLowerCase());
+    if (exists) {
+        return { success: false, message: 'This Login ID is already registered.' };
+    }
+    
+    const cleanPin = pin.trim();
+    if (cleanPin.length !== 4 || isNaN(cleanPin)) {
+        return { success: false, message: 'Access PIN must be a 4-digit numeric code.' };
+    }
+    
+    registry.push({
+        username: cleanId,
+        pinHash: hashPin(cleanPin)
+    });
+    
+    safeStorage.setItem(KEYS.USER_DIRECTORY, JSON.stringify(registry));
+    return { success: true };
+}
+
+function authenticateUser(userId, pin) {
+    const cleanId = userId.trim().toLowerCase();
+    const cleanPin = pin.trim();
+    
+    const registry = getRegisteredUsers();
+    const user = registry.find(u => u.username.toLowerCase() === cleanId);
+    
+    if (!user) {
+        return { success: false, message: 'Login ID not found. Please register first.' };
+    }
+    
+    if (user.pinHash !== hashPin(cleanPin)) {
+        return { success: false, message: 'Incorrect Access PIN. Please try again.' };
+    }
+    
+    return { success: true };
+}
+
+function switchUserSession(userId) {
+    activeUserId = userId.trim();
+    try {
+        sessionStorage.setItem('ql_active_user_id', activeUserId);
+    } catch (e) {
+        console.warn('Failed to set sessionStorage user ID.', e);
+    }
+    initializeState();
+}
+
+function logoutUser() {
+    activeUserId = '';
+    try {
+        sessionStorage.removeItem('ql_active_user_id');
+    } catch (e) {
+        console.warn('Failed to clear sessionStorage user ID.', e);
+    }
+    // Reset transient local state variables
+    state = {
+        transactions: [],
+        budgets: [],
+        globalBudget: 0,
+        goals: [],
+        statementLogs: [],
+        settings: { theme: 'dark' }
+    };
+    notifyStateChanged('reset', null);
+}
 
 // Initial data starts completely empty (0/blank) on clean slate
 const DEFAULT_BLANK_DATA = {
@@ -467,7 +596,7 @@ function updateTheme(theme) {
 }
 
 function factoryReset() {
-    safeStorage.clear();
+    safeStorage.clearUserPartition();
     loadBlankSlate();
     notifyStateChanged('reset', null);
 }

@@ -2635,3 +2635,250 @@ body {
         background: transparent !important;
     }
 }
+
+/* 
+ =================================================================
+ PREMIUM MULTI-PROFILE AUTHENTICATION OVERLAYS
+ =================================================================
+*/
+body.login-mode .app-container {
+    display: none !important;
+}
+
+body.login-mode #finance-canvas {
+    filter: blur(4px);
+}
+
+.login-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 24px;
+    background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent 40%),
+                radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.05), transparent 40%),
+                rgba(11, 15, 25, 0.82);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: opacity 0.3s ease;
+}
+
+.login-wrapper.active {
+    display: flex;
+}
+
+:root[data-theme="light"] .login-wrapper {
+    background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.02), transparent 40%),
+                radial-gradient(circle at bottom left, rgba(37, 99, 235, 0.02), transparent 40%),
+                rgba(248, 250, 252, 0.85);
+}
+
+.login-card {
+    max-width: 440px;
+    width: 100%;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 
+                0 0 40px rgba(59, 130, 246, 0.05);
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+:root[data-theme="light"] .login-card {
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.1), 
+                0 0 40px rgba(37, 99, 235, 0.02);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.login-logo-icon {
+    width: 56px;
+    height: 56px;
+    background-color: var(--primary-glow);
+    border: 1px solid var(--primary);
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    margin-bottom: 16px;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+}
+
+.login-header h2 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.6px;
+}
+
+.login-subtitle {
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.login-actions {
+    margin-top: 8px;
+}
+
+.login-toggle {
+    margin-top: 24px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+}
+
+.btn-text-link {
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+    padding: 0;
+}
+
+.btn-text-link:hover {
+    color: var(--accent);
+}
+
+/* Quick Profiles Switcher */
+.quick-profiles-section {
+    margin-top: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.quick-profiles-section.hidden {
+    display: none;
+}
+
+.divider-text {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.divider-text::before,
+.divider-text::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.divider-text::before {
+    margin-right: .75em;
+}
+
+.divider-text::after {
+    margin-left: .75em;
+}
+
+.quick-profiles-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.quick-profile-item {
+    background-color: rgba(255, 255, 255, 0.015);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+:root[data-theme="light"] .quick-profile-item {
+    background-color: rgba(15, 23, 42, 0.01);
+}
+
+.quick-profile-item:hover {
+    background-color: rgba(59, 130, 246, 0.05);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.quick-profile-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--accent-glow);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.quick-profile-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.quick-profile-name {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.quick-profile-id {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+
+/* Sidebar Logout styling */
+.btn-logout {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+}
+
+.btn-logout:hover {
+    color: var(--danger);
+    background-color: var(--danger-glow);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.1);
+}
+
+.btn-logout i {
+    width: 18px;
+    height: 18px;
+}
+
