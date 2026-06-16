@@ -1,0 +1,22 @@
+{
+  "name": "quantum-ledger",
+  "version": "1.0.0",
+  "description": "Premium Futuristic Expense Tracker with glassmorphism and neon analytics.",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server -p 3000 -o",
+    "start": "npx http-server -p 3000"
+  },
+  "keywords": [
+    "expense-tracker",
+    "futuristic",
+    "saas-dashboard",
+    "glassmorphism",
+    "chartjs"
+  ],
+  "author": "Shubham Gupta",
+  "license": "ISC",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

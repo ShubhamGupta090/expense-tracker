@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Ledger | Enterprise Personal Finance</title>
+    <!-- Google Fonts: Plus Jakarta Sans for UI, Inter for data numbers -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- App Main Stylesheets -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- CDNs: ApexCharts, jsPDF, jsPDF-AutoTable, SheetJS (XLSX), Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <!-- Animated Finance canvas background -->
+    <canvas id="finance-canvas"></canvas>
+
+    <!-- App Wrapper -->
+    <div class="app-container">
+        
+        <!-- Left Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <div class="logo-icon">
+                        <i data-lucide="activity"></i>
+                    </div>
+                    <span class="logo-text">Quantum<span class="logo-subtext">Ledger</span></span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="nav-item active" data-tab="dashboard">
+                        <a href="#dashboard">
+                            <i data-lucide="layout-dashboard"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-tab="transactions">
+                        <a href="#transactions">
+                            <i data-lucide="arrow-left-right"></i>
+                            <span>Transactions</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-tab="budgets">
+                        <a href="#budgets">
+                            <i data-lucide="pie-chart"></i>
+                            <span>Budgets</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-tab="savings">
+                        <a href="#savings">
+                            <i data-lucide="gem"></i>
+                            <span>Savings Goals</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-tab="analytics">
+                        <a href="#analytics">
+                            <i data-lucide="trending-up"></i>
+                            <span>Analytics</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-tab="statements">
+                        <a href="#statements">
+                            <i data-lucide="file-text"></i>
+                            <span>Statements</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-tab="settings">
+                        <a href="#settings">
+                            <i data-lucide="settings"></i>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Sidebar User Profile Footer -->
+            <div class="sidebar-footer">
+                <div class="user-avatar">SG</div>
+                <div class="user-info">
+                    <span class="user-name">Shubham Gupta</span>
+                    <span class="user-email">shubh@quantum.in</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace Area -->
+        <main class="main-workspace">
+            
+            <!-- Global Dashboard Topbar Header -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="sidebar-toggle" id="sidebar-toggle-btn">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <h1 class="page-title" id="page-title-text">Dashboard</h1>
+                </div>
+                <div class="topbar-right">
+                    <div class="timezone-display">
+                        <span class="tz-label">IST Timezone</span>
+                        <span class="tz-value" id="current-ist-time">13/06/2026 17:00:00</span>
+                    </div>
+                    
+                    <button class="btn btn-icon theme-toggle-btn" id="theme-toggle" title="Toggle Light/Dark Theme">
+                        <i data-lucide="sun" class="sun-icon"></i>
+                        <i data-lucide="moon" class="moon-icon"></i>
+                    </button>
+
+                    <button class="btn btn-shortcut" id="palette-hint" title="Open Command Palette (Ctrl+K)">
+                        <span>Ctrl + K</span>
+                    </button>
+                    
+                    <button class="btn btn-primary btn-quick-add" id="btn-quick-add-transaction">
+                        <i data-lucide="plus"></i>
+                        <span>Quick Add</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Views Stack -->
+            <div class="views-container">
+                
+                <!-- VIEW: Dashboard -->
+                <section class="view-panel active" id="view-dashboard">
+                    <!-- Top Counters / KPI Cards -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card" id="card-balance">
+                            <div class="kpi-details">
+                                <span class="kpi-label">Available Balance</span>
+                                <h3 class="kpi-value Indian-numbers" id="val-balance">₹ 0</h3>
+                                <span class="kpi-subtext" id="val-netflow">Net Cash Flow: ₹ 0</span>
+                            </div>
+                            <div class="kpi-icon icon-balance">
+                                <i data-lucide="wallet"></i>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card" id="card-income">
+                            <div class="kpi-details">
+                                <span class="kpi-label">Total Income</span>
+                                <h3 class="kpi-value Indian-numbers" id="val-income">₹ 0</h3>
+                                <span class="kpi-subtext text-success" id="val-income-sub">Active & Recurring</span>
+                            </div>
+                            <div class="kpi-icon icon-income">
+                                <i data-lucide="arrow-up-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card" id="card-expenses">
+                            <div class="kpi-details">
+                                <span class="kpi-label">Total Expenses</span>
+                                <h3 class="kpi-value Indian-numbers" id="val-expenses">₹ 0</h3>
+                                <span class="kpi-subtext text-danger" id="val-expenses-sub">Monthly utilization: 0%</span>
+                            </div>
+                            <div class="kpi-icon icon-expenses">
+                                <i data-lucide="arrow-down-left"></i>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card" id="card-savings">
+                            <div class="kpi-details">
+                                <span class="kpi-label">Total Savings</span>
+                                <h3 class="kpi-value Indian-numbers" id="val-savings">₹ 0</h3>
+                                <span class="kpi-subtext text-info" id="val-savings-rate">Savings Rate: 0%</span>
+                            </div>
+                            <div class="kpi-icon icon-savings">
+                                <i data-lucide="piggy-bank"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Middle Interactive Grid -->
+                    <div class="dashboard-grid">
+                        <!-- Left Block: Health Score & Financial Recommendation -->
+                        <div class="glass-card card-health">
+                            <div class="card-header">
+                                <h4 class="card-title">Financial Health Analysis</h4>
+                                <span class="badge badge-pulse" id="health-badge">Perfect</span>
+                            </div>
+                            <div class="health-card-body">
+                                <div class="health-gauge-container">
+                                    <svg class="health-gauge" viewBox="0 0 120 120">
+                                        <circle class="gauge-bg" cx="60" cy="60" r="50"></circle>
+                                        <circle class="gauge-progress" cx="60" cy="60" r="50" style="stroke-dasharray: 314; stroke-dashoffset: 314;"></circle>
+                                    </svg>
+                                    <div class="gauge-center">
+                                        <span class="health-score-val" id="val-health-score">0</span>
+                                        <span class="health-score-max">/100</span>
+                                    </div>
+                                </div>
+                                <div class="health-insights">
+                                    <p class="health-summary-text" id="health-score-summary">Calculating your financial health profile...</p>
+                                    <ul class="health-bullets" id="health-bullets-list">
+                                        <!-- Dynamically generated suggestions -->
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Block: Heatmap & Budget Alerts -->
+                        <div class="glass-card card-heatmap">
+                            <div class="card-header">
+                                <h4 class="card-title">Daily Spending Heatmap</h4>
+                                <span class="card-header-actions text-muted text-sm">Last 18 Weeks</span>
+                            </div>
+                            <div class="heatmap-card-body">
+                                <div class="heatmap-scroller">
+                                    <div class="heatmap-legend-y">
+                                        <span>Mon</span>
+                                        <span>Wed</span>
+                                        <span>Fri</span>
+                                    </div>
+                                    <div class="heatmap-grid" id="spending-heatmap-grid">
+                                        <!-- Days rendered via JavaScript -->
+                                    </div>
+                                </div>
+                                <div class="heatmap-footer">
+                                    <span class="heatmap-legend-hint">Less</span>
+                                    <div class="heatmap-scale">
+                                        <span class="scale-box scale-0"></span>
+                                        <span class="scale-box scale-1"></span>
+                                        <span class="scale-box scale-2"></span>
+                                        <span class="scale-box scale-3"></span>
+                                        <span class="scale-box scale-4"></span>
+                                    </div>
+                                    <span class="heatmap-legend-hint">More (₹ 5,000+)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Dashboard Widgets Grid -->
+                    <div class="widgets-grid">
+                        <!-- Active Savings Goals Snapshot -->
+                        <div class="glass-card card-widget" id="widget-savings-snapshot">
+                            <div class="card-header">
+                                <h4 class="card-title">Savings Goals</h4>
+                                <a href="#savings" class="card-link" data-tab-link="savings">Manage Goals <i data-lucide="chevron-right"></i></a>
+                            </div>
+                            <div class="widget-body" id="widget-savings-list">
+                                <!-- Goals rendered dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Budget utilization meter lists -->
+                        <div class="glass-card card-widget" id="widget-budget-meters">
+                            <div class="card-header">
+                                <h4 class="card-title">Budget Allocation</h4>
+                                <a href="#budgets" class="card-link" data-tab-link="budgets">Adjust Limits <i data-lucide="chevron-right"></i></a>
+                            </div>
+                            <div class="widget-body" id="widget-budget-list">
+                                <!-- Budgets rendered dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Smart Insights & Warnings -->
+                        <div class="glass-card card-widget card-insights" id="widget-smart-insights">
+                            <div class="card-header">
+                                <h4 class="card-title">Smart AI Insights</h4>
+                                <span class="badge bg-secondary-glow">Automated</span>
+                            </div>
+                            <div class="widget-body" id="widget-insights-container">
+                                <!-- Insights recommendations list -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW: Transactions -->
+                <section class="view-panel" id="view-transactions">
+                    <!-- Action Bar -->
+                    <div class="action-card glass-card">
+                        <div class="search-bar-container">
+                            <i data-lucide="search" class="search-icon"></i>
+                            <input type="text" id="tx-search-input" placeholder="Search description, notes, categories, payment methods...">
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary" id="btn-toggle-filters">
+                                <i data-lucide="sliders-horizontal"></i>
+                                <span>Advanced Filters</span>
+                            </button>
+                            <button class="btn btn-primary" id="btn-add-transaction">
+                                <i data-lucide="plus"></i>
+                                <span>Add Transaction</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter panel (Collapsible) -->
+                    <div class="filter-panel glass-card hidden" id="tx-filter-drawer">
+                        <div class="filter-grid">
+                            <div class="filter-group">
+                                <label for="filter-type">Type</label>
+                                <select id="filter-type">
+                                    <option value="all">All Transactions</option>
+                                    <option value="expense">Expenses Only</option>
+                                    <option value="income">Incomes Only</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-group">
+                                <label for="filter-category">Category</label>
+                                <select id="filter-category">
+                                    <option value="all">All Categories</option>
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+
+                            <div class="filter-group">
+                                <label for="filter-method">Payment Method</label>
+                                <select id="filter-method">
+                                    <option value="all">All Methods</option>
+                                    <option value="UPI">UPI</option>
+                                    <option value="Credit Card">Credit Card</option>
+                                    <option value="Debit Card">Debit Card</option>
+                                    <option value="Net Banking">Net Banking</option>
+                                    <option value="Cash">Cash</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-group">
+                                <label for="filter-date-from">From Date</label>
+                                <input type="date" id="filter-date-from">
+                            </div>
+
+                            <div class="filter-group">
+                                <label for="filter-date-to">To Date</label>
+                                <input type="date" id="filter-date-to">
+                            </div>
+
+                            <div class="filter-group">
+                                <label for="filter-sort">Sort By</label>
+                                <select id="filter-sort">
+                                    <option value="date-desc">Date: Newest First</option>
+                                    <option value="date-asc">Date: Oldest First</option>
+                                    <option value="amount-desc">Amount: High to Low</option>
+                                    <option value="amount-asc">Amount: Low to High</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="filter-footer">
+                            <button class="btn btn-text btn-sm" id="btn-clear-filters">Reset Filters</button>
+                            <button class="btn btn-primary btn-sm" id="btn-apply-filters">Apply Active Filters</button>
+                        </div>
+                    </div>
+
+                    <!-- Ledger Table -->
+                    <div class="glass-card table-card">
+                        <div class="table-scroller">
+                            <table class="ledger-table" id="transactions-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date & Time</th>
+                                        <th>Type</th>
+                                        <th>Category / Source</th>
+                                        <th>Description</th>
+                                        <th>Payment Mode</th>
+                                        <th class="text-right">Amount</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactions-table-body">
+                                    <!-- Rendered dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Table Empty State -->
+                        <div class="empty-state hidden" id="table-empty-state">
+                            <div class="empty-icon"><i data-lucide="archive"></i></div>
+                            <h5>No transactions found</h5>
+                            <p>Try adjusting your search criteria or add a new transaction to get started.</p>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="table-pagination">
+                            <span class="pagination-info" id="pagination-text">Showing 1-10 of 100 entries</span>
+                            <div class="pagination-buttons">
+                                <button class="btn btn-icon btn-sm btn-secondary" id="btn-prev-page" title="Previous Page">
+                                    <i data-lucide="chevron-left"></i>
+                                </button>
+                                <div class="page-numbers-container" id="pagination-pages">
+                                    <!-- Rendered dynamically -->
+                                </div>
+                                <button class="btn btn-icon btn-sm btn-secondary" id="btn-next-page" title="Next Page">
+                                    <i data-lucide="chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW: Budgets -->
+                <section class="view-panel" id="view-budgets">
+                    <!-- General Limit Card -->
+                    <div class="glass-card budget-global-card">
+                        <div class="global-budget-info">
+                            <div>
+                                <span class="kpi-label">Monthly Global Budget</span>
+                                <h2 class="Indian-numbers" id="val-global-budget">₹ 0</h2>
+                                <p class="text-muted text-sm" id="val-global-budget-desc">Overall spending cap before trigger alerts.</p>
+                            </div>
+                            <div class="global-budget-inputs">
+                                <div class="input-group-row">
+                                    <span class="input-addon">₹</span>
+                                    <input type="number" id="input-global-budget" placeholder="Set global budget..." min="0">
+                                    <button class="btn btn-primary" id="btn-save-global-budget">Update Limit</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category Budget Grid -->
+                    <div class="category-budgets-section">
+                        <div class="section-title-row">
+                            <h3 class="section-title">Category Budgets</h3>
+                            <button class="btn btn-secondary btn-sm" id="btn-create-category-budget">
+                                <i data-lucide="plus"></i>
+                                <span>Create Category Limit</span>
+                            </button>
+                        </div>
+                        <div class="budget-grid" id="category-budgets-grid">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW: Savings Goals -->
+                <section class="view-panel" id="view-savings">
+                    <div class="savings-header-card glass-card">
+                        <div class="savings-headline">
+                            <span class="kpi-label">Target Milestones</span>
+                            <h2>Accumulated Savings: <span class="Indian-numbers" id="val-total-savings-box">₹ 0</span></h2>
+                            <p class="text-muted text-sm">Create and contribute to financial goals. Allocate cash towards savings buffers.</p>
+                        </div>
+                        <button class="btn btn-primary" id="btn-create-savings-goal">
+                            <i data-lucide="plus"></i>
+                            <span>Create Savings Goal</span>
+                        </button>
+                    </div>
+
+                    <!-- Savings Goal Cards Grid -->
+                    <div class="savings-grid" id="savings-goals-grid">
+                        <!-- Populated dynamically -->
+                    </div>
+                </section>
+
+                <!-- VIEW: Analytics -->
+                <section class="view-panel" id="view-analytics">
+                    <div class="analytics-layout">
+                        <!-- Top Row Charts -->
+                        <div class="analytics-row">
+                            <div class="glass-card chart-card">
+                                <div class="chart-header">
+                                    <h4 class="chart-title">Income vs Expenses</h4>
+                                    <span class="text-muted text-xs">Last 6 Months</span>
+                                </div>
+                                <div class="chart-body" id="chart-income-vs-expense"></div>
+                            </div>
+                            
+                            <div class="glass-card chart-card">
+                                <div class="chart-header">
+                                    <h4 class="chart-title">Monthly Expense Spline</h4>
+                                    <span class="text-muted text-xs">Spending Velocity</span>
+                                </div>
+                                <div class="chart-body" id="chart-spending-trend"></div>
+                            </div>
+                        </div>
+
+                        <!-- Mid Row Charts -->
+                        <div class="analytics-row">
+                            <div class="glass-card chart-card">
+                                <div class="chart-header">
+                                    <h4 class="chart-title">Category Breakdown</h4>
+                                    <span class="text-muted text-xs">Expense Share</span>
+                                </div>
+                                <div class="chart-body" id="chart-category-breakdown"></div>
+                            </div>
+                            
+                            <div class="glass-card chart-card">
+                                <div class="chart-header">
+                                    <h4 class="chart-title">Savings Milestone Growth</h4>
+                                    <span class="text-muted text-xs">Goal Accumulation</span>
+                                </div>
+                                <div class="chart-body" id="chart-savings-growth"></div>
+                            </div>
+                        </div>
+
+                        <!-- Budget Utilization Chart -->
+                        <div class="analytics-full-row">
+                            <div class="glass-card chart-card">
+                                <div class="chart-header">
+                                    <h4 class="chart-title">Budget Caps vs Actual Expenditure</h4>
+                                    <span class="text-muted text-xs">Efficiency Tracking</span>
+                                </div>
+                                <div class="chart-body" id="chart-budget-utilization"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW: Statements -->
+                <section class="view-panel" id="view-statements">
+                    <div class="statements-grid">
+                        <!-- Request Statement Form -->
+                        <div class="glass-card statement-generator-card">
+                            <div class="card-header border-bottom">
+                                <h4 class="card-title">Generate Account Statement</h4>
+                            </div>
+                            <div class="generator-body">
+                                <p class="text-muted text-sm">Select dates and timestamps (IST) to compile a formal statement. Opening and closing balances will be calculated automatically.</p>
+                                
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="statement-date-from">Start Date & Time (IST)</label>
+                                        <div class="datetime-input-wrapper">
+                                            <input type="date" id="statement-date-from">
+                                            <input type="time" id="statement-time-from" value="00:00">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="statement-date-to">End Date & Time (IST)</label>
+                                        <div class="datetime-input-wrapper">
+                                            <input type="date" id="statement-date-to">
+                                            <input type="time" id="statement-time-to" value="23:59">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="statement-presets">
+                                    <span class="text-xs text-muted font-semibold">Presets:</span>
+                                    <button class="btn btn-outline btn-xs" id="preset-this-month">This Month</button>
+                                    <button class="btn btn-outline btn-xs" id="preset-last-30">Last 30 Days</button>
+                                    <button class="btn btn-outline btn-xs" id="preset-current-fy">Financial Year (FY)</button>
+                                </div>
+
+                                <div class="statement-actions">
+                                    <button class="btn btn-outline" id="btn-export-csv">
+                                        <i data-lucide="file-spreadsheet" class="text-success"></i>
+                                        <span>Download CSV</span>
+                                    </button>
+                                    <button class="btn btn-outline" id="btn-export-excel">
+                                        <i data-lucide="sheet" class="text-primary"></i>
+                                        <span>Download Excel (.xlsx)</span>
+                                    </button>
+                                    <button class="btn btn-primary" id="btn-export-pdf">
+                                        <i data-lucide="file-down"></i>
+                                        <span>Generate PDF Statement</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Statement Log / History -->
+                        <div class="glass-card statement-history-card">
+                            <div class="card-header border-bottom">
+                                <h4 class="card-title">Statement Generation Log</h4>
+                            </div>
+                            <div class="statement-history-body">
+                                <div class="table-scroller">
+                                    <table class="ledger-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Generated At</th>
+                                                <th>Statement Period</th>
+                                                <th>Records</th>
+                                                <th class="text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="statement-log-table-body">
+                                            <!-- Dynamically populated -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="empty-state text-center py-4" id="statement-log-empty-state">
+                                    <div class="empty-icon"><i data-lucide="history"></i></div>
+                                    <h5>No statements generated yet</h5>
+                                    <p>Your generated PDFs, CSVs, and Excel sheets will be logged here for quick retrieval.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW: Settings -->
+                <section class="view-panel" id="view-settings">
+                    <div class="settings-layout">
+                        <!-- Backup Card -->
+                        <div class="glass-card settings-card">
+                            <div class="card-header border-bottom">
+                                <h4 class="card-title">Database Management</h4>
+                            </div>
+                            <div class="settings-body">
+                                <div class="setting-item">
+                                    <div class="setting-item-info">
+                                        <h5>Import Financial Data</h5>
+                                        <p class="text-muted text-sm">Upload a JSON backup file to overwrite current localStorage records.</p>
+                                    </div>
+                                    <div class="setting-item-control">
+                                        <input type="file" id="settings-import-file" accept=".json" style="display: none;">
+                                        <button class="btn btn-outline" onclick="document.getElementById('settings-import-file').click()">
+                                            <i data-lucide="upload-cloud"></i>
+                                            <span>Upload JSON</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <div class="setting-item-info">
+                                        <h5>Export Financial Data</h5>
+                                        <p class="text-muted text-sm">Download your current transactions, budgets, and savings goals as a JSON backup.</p>
+                                    </div>
+                                    <div class="setting-item-control">
+                                        <button class="btn btn-outline" id="settings-btn-export-json">
+                                            <i data-lucide="download-cloud"></i>
+                                            <span>Backup JSON</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item text-danger-group">
+                                    <div class="setting-item-info">
+                                        <h5>Factory Reset</h5>
+                                        <p class="text-muted text-sm">Erase all transactions, budget plans, savings milestones, and logs permanently.</p>
+                                    </div>
+                                    <div class="setting-item-control">
+                                        <button class="btn btn-danger" id="settings-btn-reset">
+                                            <i data-lucide="trash-2"></i>
+                                            <span>Reset All Data</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- App Version and Developer Credit Info -->
+                        <div class="glass-card settings-card">
+                            <div class="card-header border-bottom">
+                                <h4 class="card-title">System & Author Information</h4>
+                            </div>
+                            <div class="settings-body developer-card-body">
+                                <div class="developer-info-grid">
+                                    <div class="developer-badge">
+                                        <span class="badge badge-success">Production Ready</span>
+                                        <span class="badge badge-info">v1.2.0-stable</span>
+                                    </div>
+                                    <div class="developer-credit-text">
+                                        <p>This premium system is configured specifically for Indian Standard Time (IST) zones and formats numbers utilizing the Indian Number System standard.</p>
+                                        <p>Developed to match the layout, security, and rendering of enterprise wealth management platforms.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Elegant Footer -->
+            <footer class="app-footer">
+                <div class="footer-left">
+                    <span>© 2026 Quantum Ledger. All rights reserved.</span>
+                </div>
+                <div class="footer-right">
+                    <span>Made by <strong>Shubham Gupta</strong></span>
+                    <span class="divider">|</span>
+                    <span>Email: <a href="mailto:shubhamgupta090903@gmail.com" class="footer-email">shubhamgupta090903@gmail.com</a></span>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- MODAL: ADD / EDIT TRANSACTION (SLIDE-OVER) -->
+    <div class="modal-backdrop" id="modal-transaction">
+        <div class="slide-panel">
+            <div class="panel-header">
+                <h3 id="transaction-modal-title">Log New Transaction</h3>
+                <button class="btn btn-icon btn-close-modal" id="btn-close-transaction-modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="panel-body">
+                <form id="form-transaction">
+                    <input type="hidden" id="tx-id">
+                    
+                    <div class="form-group">
+                        <label>Transaction Flow Type</label>
+                        <div class="segmented-control">
+                            <input type="radio" id="tx-type-expense" name="tx-type" value="expense" checked>
+                            <label for="tx-type-expense">Expense</label>
+                            
+                            <input type="radio" id="tx-type-income" name="tx-type" value="income">
+                            <label for="tx-type-income">Income</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tx-amount">Amount (₹)</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon-label">₹</span>
+                            <input type="number" id="tx-amount" step="0.01" min="0.01" required placeholder="0.00">
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="tx-category-group">
+                        <label for="tx-category">Category</label>
+                        <select id="tx-category" required>
+                            <option value="" disabled selected>Select category...</option>
+                            <option value="Food">Food</option>
+                            <option value="Travel">Travel</option>
+                            <option value="Fuel">Fuel</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Bills">Bills</option>
+                            <option value="Electricity">Electricity</option>
+                            <option value="Rent">Rent</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Health">Health</option>
+                            <option value="Education">Education</option>
+                            <option value="Investments">Investments</option>
+                            <option value="EMI">EMI</option>
+                            <option value="Insurance">Insurance</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="tx-source-group" style="display: none;">
+                        <label for="tx-source">Income Source</label>
+                        <input type="text" id="tx-source" placeholder="e.g. Salary, Dividend, Freelance">
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="tx-date">Date (IST)</label>
+                            <input type="date" id="tx-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="tx-time">Time</label>
+                            <input type="time" id="tx-time" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="tx-method-group">
+                        <label for="tx-method">Payment Method</label>
+                        <select id="tx-method">
+                            <option value="UPI">UPI (GooglePay/PhonePe/Paytm)</option>
+                            <option value="Credit Card">Credit Card</option>
+                            <option value="Debit Card">Debit Card</option>
+                            <option value="Net Banking">Net Banking</option>
+                            <option value="Cash">Cash</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tx-description">Description</label>
+                        <input type="text" id="tx-description" placeholder="Brief transaction description" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tx-notes">Private Notes (Optional)</label>
+                        <textarea id="tx-notes" rows="3" placeholder="Add custom footnotes or reference numbers..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="panel-footer">
+                <button class="btn btn-outline" id="btn-cancel-transaction">Cancel</button>
+                <button class="btn btn-primary" id="btn-submit-transaction">Save Transaction</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD / EDIT BUDGET -->
+    <div class="modal-backdrop" id="modal-budget">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="budget-modal-title">Configure Category Limit</h3>
+                <button class="btn btn-icon btn-close-modal" id="btn-close-budget-modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="form-budget">
+                    <div class="form-group">
+                        <label for="budget-category">Select Category</label>
+                        <select id="budget-category" required>
+                            <option value="" disabled selected>Select category...</option>
+                            <!-- Filter out categories with budgets already if creating new -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="budget-amount">Allocated Limit (₹)</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon-label">₹</span>
+                            <input type="number" id="budget-amount" min="1" required placeholder="Enter monthly cap">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="btn-cancel-budget">Cancel</button>
+                <button class="btn btn-primary" id="btn-submit-budget">Save Budget Limit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD / EDIT SAVINGS GOAL -->
+    <div class="modal-backdrop" id="modal-savings">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="savings-modal-title">Configure Saving Goal</h3>
+                <button class="btn btn-icon btn-close-modal" id="btn-close-savings-modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="form-savings">
+                    <input type="hidden" id="savings-goal-id">
+                    <div class="form-group">
+                        <label for="savings-title">Goal Name</label>
+                        <input type="text" id="savings-title" placeholder="e.g. New Home Downpayment" required>
+                    </div>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="savings-target">Target Amount (₹)</label>
+                            <div class="input-icon-wrapper">
+                                <span class="input-icon-label">₹</span>
+                                <input type="number" id="savings-target" min="1" required placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="savings-current">Initially Saved (₹)</label>
+                            <div class="input-icon-wrapper">
+                                <span class="input-icon-label">₹</span>
+                                <input type="number" id="savings-current" min="0" value="0" placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="savings-deadline">Goal Target Date</label>
+                        <input type="date" id="savings-deadline" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="btn-cancel-savings">Cancel</button>
+                <button class="btn btn-primary" id="btn-submit-savings">Save Saving Goal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: GOAL CONTRIBUTION (ADD SAVINGS) -->
+    <div class="modal-backdrop" id="modal-goal-contribution">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Goal Contribution</h3>
+                <button class="btn btn-icon btn-close-modal" id="btn-close-contrib-modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="text-sm text-muted">Inject capital directly to increase savings for: <strong id="contrib-goal-title">Goal</strong></p>
+                <form id="form-contribution">
+                    <input type="hidden" id="contrib-goal-id">
+                    <div class="form-group">
+                        <label for="contrib-amount">Contribution Amount (₹)</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon-label">₹</span>
+                            <input type="number" id="contrib-amount" min="1" required placeholder="Enter contribution amount">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="btn-cancel-contrib">Cancel</button>
+                <button class="btn btn-primary" id="btn-submit-contrib">Inject Capital</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- COMMAND PALETTE (CTRL+K) -->
+    <div class="modal-backdrop" id="modal-palette">
+        <div class="palette-box">
+            <div class="palette-search">
+                <i data-lucide="search" class="palette-search-icon"></i>
+                <input type="text" id="palette-search-input" placeholder="Type a command or search sections..." autocomplete="off">
+                <button class="btn btn-icon btn-sm btn-close-modal" id="btn-close-palette">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="palette-results" id="palette-results-list">
+                <!-- Filled dynamically -->
+            </div>
+            <div class="palette-footer">
+                <span>Use <kbd>↑</kbd> <kbd>↓</kbd> to navigate, <kbd>Enter</kbd> to select, <kbd>Esc</kbd> to close.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONFIRMATION MODAL -->
+    <div class="modal-backdrop" id="modal-confirm">
+        <div class="confirm-box">
+            <div class="confirm-icon" id="confirm-modal-icon">
+                <i data-lucide="alert-triangle"></i>
+            </div>
+            <h3 id="confirm-modal-title">Confirm Action</h3>
+            <p id="confirm-modal-message">Are you absolutely sure you want to perform this operation? This database change cannot be undone.</p>
+            <div class="confirm-buttons">
+                <button class="btn btn-outline" id="btn-confirm-cancel">Cancel</button>
+                <button class="btn btn-danger" id="btn-confirm-proceed">Confirm Proceed</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOASTS CONTAINER -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Main JavaScript Scripts (Sequential Non-CORS Globals) -->
+    <script src="js/utils/formatters.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/utils/exporters.js"></script>
+    <script src="js/ui/components.js"></script>
+    <script src="js/ui/theme.js"></script>
+    <script src="js/ui/dashboard.js"></script>
+    <script src="js/ui/transactions.js"></script>
+    <script src="js/ui/budgets.js"></script>
+    <script src="js/ui/savings.js"></script>
+    <script src="js/ui/statements.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
